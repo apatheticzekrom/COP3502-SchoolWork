@@ -1,0 +1,288 @@
+/* COP 3502C Assignment 2 This program is written by: Benjamin Giang */
+#include <stdio.h>
+#include <stdlib.h>
+#include "leak_detector_c.h" //immediately after including all the header files
+
+#define MAX_STR_LEN 51
+#define MAX_GROUND_NUM 10
+#define MAX_SOLDIERS 10000
+#define EMPTY -9999
+
+typedef struct soldier
+{
+  int sequenceNumber;
+  struct soldier *prev;
+  struct soldier *next;
+}soldier;
+
+typedef struct queue // fix this
+{
+  // struct soldier* front; // idk
+  // struct soldier* back;
+
+  int* elements; // pointer for DMA of queue array
+  int numElements; // num of elements in queue = NOE
+  int queueSize; // current size of queue = CAPACITY
+  int front; // front
+
+  int nodeCount;
+  int th;
+  int k;
+  char queueName[MAX_STR_LEN];
+}queue;
+
+// Dynamically allocate a soldier struct and returns a soldier node 
+soldier* createSoldier(int sequence) 
+{
+  struct soldier* temp = (struct soldier*)malloc(sizeof(struct soldier));
+  temp->sequenceNumber = sequence;
+  temp->next = NULL;
+  temp->prev = NULL;
+  return temp;
+}
+
+// Inserts at front
+void insertfront(struct soldier** head, int newdata)
+{
+    struct soldier* newNode = createSoldier(newdata);
+ 
+    // Newnode next = head and previous = NULL
+
+    newNode->next = (*head);
+    newNode->prev = NULL;
+
+    // head prev = newnode
+    if ((*head) != NULL)
+        (*head)->prev = newNode;
+    (*head) = newNode;
+}
+
+
+// Displays linked list
+void display(soldier* head)
+{
+  printf("\nPrinting linked list.....\n");
+  while (head!=NULL)
+  {
+    printf("%d ", head->sequenceNumber);
+    head=head->next;
+  }
+  printf("\n");
+}
+
+
+soldier* reverse(soldier* head, soldier* last)
+{
+  struct soldier* temp;
+  struct soldier* curr;
+  curr = head;
+  if(curr == NULL)
+  {
+    printf("Empty list\n");
+    return NULL;
+  }
+
+  while(curr!=NULL)
+  {
+  
+  temp = curr->next;
+  curr->next = curr->prev;
+  curr->prev = temp;
+  curr = temp;
+
+  } 
+  curr = head;
+  head = last;
+  last = curr;
+
+  printf("Reversed\n");
+  return curr;
+}
+  
+
+
+
+int main(void)
+{
+  FILE *infile;
+  infile = fopen("in.txt", "r");
+
+  // Reads number of groups (nGroups)
+  int nGroups;
+  fscanf(infile, "%d", &nGroups);
+  printf("%d\n", nGroups);
+
+  // Reads g_int, groundname, nSoldiers, k_int, th_int
+  int g_int, nSoldiers, k_int, th_int;
+  char groundname[MAX_STR_LEN];
+  
+  struct soldier* head;
+  struct soldier* last;
+  head = NULL;
+  last = NULL;
+
+  for(int i; i<nGroups; i++)
+  {
+
+    fscanf(infile, "%d %s %d %d %d", &g_int, groundname, &nSoldiers, &k_int, &th_int);
+    printf("%d %s %d %d %d\n", g_int, groundname, nSoldiers, k_int, th_int);
+
+    for(int j; j < nSoldiers; j++)
+    {
+      insertfront(&head, j);
+      display(head);
+    }
+    //reverse(head, last);
+    display(head);
+    break;
+  }
+
+  queue myQueue[MAX_GROUND_NUM];
+
+  // // DMA queue
+  // struct queue* myQueuePtr = (struct queue*)malloc(sizeof(struct queue));
+
+  // // Testing all the queue functions
+  // enQueue(myQueuePtr, 3);
+  // printf("%d\n", peek(myQueuePtr));
+  // printf("%d\n", isEmpty(myQueuePtr));
+  // printf("%d\n", peek(myQueuePtr));
+  // // display(myQueuePtr);
+  // // display(myQueuePtr);
+
+  // soldier soldier[nSoldiers]; // fix this
+  // soldier = createSoldier(int sequence);
+  
+  fclose(infile);
+}
+
+
+
+// --------------------------------------------------------------------------------------------------------
+
+// struct soldier getnewnode(int x)
+// {
+//   struct soldier newNode = *(struct soldier*)malloc(sizeof(struct soldier));
+//   newNode.sequenceNumber = x;
+//   newNode.prev = NULL;
+//   newNode.next = NULL;
+//   return newNode;
+// }
+
+// void createReverseCircle(queue *q): It takes the reference of a queue, and creates a circular doubly linked list for that queue where the nodes contain sequence numbers in reverse order . For example, if n=5 it should produce a circular doubly linked list starting from 5 and ending at 1 as sequence number. During this process, use the create_soldier function as well as enqueu() function to add the soldier to the queue. 
+
+// You have to implement and use enqueue, dequeue, peek, isEmpty function for this given scenario
+
+/*
+
+
+
+
+// Initializes a queue
+void initQ(struct queue* qPtr)
+{
+  qPtr->elements = (int*)malloc(sizeof(int)*INIT_SIZE);
+  qPtr->front = 0;
+  qPtr->numElements = 0;
+  qPtr->queueSize = INIT_SIZE;
+}
+
+// Adds item to queue
+int enQueue(struct queue* qPtr, int val)
+{
+  int i;
+  
+  // When queue isnt full
+  if(qPtr->numElements != qPtr->queueSize)
+  {
+    qPtr->elements[(qPtr->front + qPtr->numElements) % qPtr->queueSize] = val;
+    (qPtr->numElements)++;
+    return 1;
+  }
+  // When queue is full
+  else
+  {
+    qPtr->elements = realloc(qPtr->elements, (qPtr->queueSize)*sizeof(int)*2);
+
+    // Copy all of items that were stored before front and move into correct locations
+    for(i=0; i<=qPtr->front-1; i++)
+      qPtr->elements[i+qPtr->queueSize] = qPtr->elements[i];
+
+    qPtr->elements[i+qPtr->queueSize] = val;
+
+    (qPtr->queueSize) *= 2;
+    (qPtr->numElements)++;
+
+    return 1;
+  }
+}
+
+// Removes item from front of queue
+int deQueue(struct queue* qPtr)
+{
+  int retval;
+
+  // Empty case
+  if (qPtr->numElements == 0)
+  {
+    return EMPTY;
+  }
+
+  // Store value that should be returned
+  retval = qPtr->elements[qPtr->front];
+
+  // Adjust index to the front of the queue accordingly
+  qPtr->front = (qPtr->front + 1) & qPtr->queueSize;
+
+  // One less element
+  (qPtr->numElements)--;
+
+  // Returns dequeued element
+  return retval;
+}
+
+// Precondition: qPtr poitns to a valid struct queue
+// Postcondition: returns true if the queue is empty
+int isEmpty(struct queue* qPtr) // I got this from lecture it doenst work ??????????????????????????
+{
+
+  return qPtr->numElements == 0;
+}
+
+// Returns front without removing it
+int peek(struct queue* qPtr)
+{
+  if(qPtr->numElements != 0)
+    return qPtr->elements[qPtr->front];
+  else
+    return EMPTY;
+}
+
+// 130 172 ????????????????????????????????????????????????????????
+void display(struct queue* qPtr)
+{
+  if(isEmpty(qPtr))
+  {
+    printf("No data in queue\n");
+    return;
+  }
+  printf("Contents in the queue : ");
+  if (qPtr->front + qPtr->numElements < qPtr->queueSize)
+  {
+    for (int i = qPtr->front; i < qPtr->queueSize; i++)
+      printf("%d ",qPtr->elements[i]);
+  }
+  else
+  {
+    for(int i = qPtr->front; i< qPtr->queueSize; i++)
+      printf("%d ", qPtr->elements[i]);
+    for(int i =0; i < (qPtr->front + qPtr->numElements)%qPtr->queueSize; i++) 
+      printf("%d ", qPtr->elements[i]);
+  }
+  printf("\n");
+}
+
+// You have to implement and use enqueue, dequeue, peek, isEmpty function for this given scenario
+
+
+*/
